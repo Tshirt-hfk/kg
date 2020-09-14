@@ -20,9 +20,9 @@ wv_from_text = KeyedVectors.load_word2vec_format('./word2vec_baike/sgns.baidubai
                                                  unicode_errors='ignore')  # C text format
 print("word2vec load succeed")
 
-id2word = {i + 1: j for i, j in enumerate(wv_from_text.wv.index2word)}
+id2word = {i + 1: j for i, j in enumerate(wv_from_text.index2word)}
 word2id = {j: i for i, j in id2word.items()}
-word2vec = wv_from_text.wv.syn0
+word2vec = wv_from_text.vectors
 word_dim = word2vec.shape[1]
 word2vec = np.concatenate([np.zeros((1, word_dim)), word2vec])
 
