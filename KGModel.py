@@ -21,7 +21,7 @@ def get_k_inter(seq, k):
     k = layers.unsqueeze(k, -1)
     seq_mean = seq * k
     seq_mean = layers.reduce_sum(seq_mean, dim=1, keep_dim=True) / layers.reduce_sum(k, dim=1, keep_dim=True)
-    seq_max = seq - (1 - k)*1e10
+    seq_max = seq - (1 - k) * 1e10
     seq_max = layers.reduce_max(seq_max, dim=1, keep_dim=True)
     return layers.concat([seq_mean, seq_max], axis=-1)
 
@@ -215,7 +215,8 @@ class REModel(fluid.dygraph.Layer):
 
 class KGModel(fluid.dygraph.Layer):
 
-    def __init__(self, t_dim, word_dim, maxlen, char_num, num_class, padding_idx=0, dropout_rate=0.25):
+    def __init__(self, t_dim, maxlen, char_num, word_num, word_dim, word_vec, num_class,
+                 padding_idx=0, dropout_rate=0.25):
         super(KGModel, self).__init__()
         self.pe = nn.Embedding(size=[maxlen, t_dim],
                                param_attr=fluid.ParamAttr(name="position_embedding.w_0",
@@ -225,7 +226,13 @@ class KGModel(fluid.dygraph.Layer):
         self.ce = nn.Embedding(size=[char_num, t_dim], padding_idx=padding_idx,
                                param_attr=fluid.ParamAttr(name="char_embedding.w_0"))
 
-        self.we = nn.Linear(word_dim, t_dim, param_attr=fluid.ParamAttr(name="word_embedding.w_0"), bias_attr=False)
+        self.we_p = nn.Embedding(size=[word_num, word_dim], padding_idx=padding_idx,
+                                 param_attr=fluid.ParamAttr(name="word_embedding.w_0",
+                                                            initializer=fluid.initializer.NumpyArrayInitializer(
+                                                                word_vec),
+                                                            trainable=False))
+
+        self.we = nn.Linear(word_dim, t_dim, param_attr=fluid.ParamAttr(name="word_embedding.w_1"), bias_attr=False)
 
         self.er_model = ERModel(t_dim)
 
@@ -238,7 +245,7 @@ class KGModel(fluid.dygraph.Layer):
     def embedding(self, t1, t2, mask=None):
         pv = self.pe(position_id(t1))
         t1 = self.ce(t1)
-        t2 = self.we(t2)
+        t2 = self.we(self.we_p(t2))
         t = t1 + t2 + pv
         if self.dropout_rate:
             t = layers.dropout(
