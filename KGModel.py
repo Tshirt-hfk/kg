@@ -11,7 +11,7 @@ def seq_gather(seq, idxs):
     最终输出[None, s_size]的向量。
     """
     idxs = layers.cast(idxs, dtype="int32")
-    batch_idxs = layers.arange(0, layers.shape(seq)[0], dtype="int32")
+    batch_idxs = fluid.dygraph.to_variable(np.arange(0, seq.shape[0], dtype="int32"))
     batch_idxs = layers.unsqueeze(batch_idxs, 1)
     idxs = layers.concat([batch_idxs, idxs], 1)
     return layers.gather_nd(seq, idxs)
@@ -27,7 +27,7 @@ def get_k_inter(seq, k):
 
 
 def position_id(x, r=0):
-    pid = fluid.dygraph.to_variable(np.arange(0, layers.shape(x)[1], dtype="int32"))
+    pid = fluid.dygraph.to_variable(np.arange(0, x.shape[1], dtype="int32"))
     pid = layers.unsqueeze(pid, 0)
     r = layers.cast(layers.ones_like(x), dtype="int32") * r
     return layers.cast(layers.abs(layers.elementwise_sub(pid, r)), dtype='int64')
