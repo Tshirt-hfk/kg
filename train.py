@@ -81,7 +81,7 @@ def extract_items(model, text_in):
 def evaluate(model):
     orders = ['subject', 'predicate', 'object']
     A, B, C = 1e-10, 1e-10, 1e-10
-    F = open('dev_pred.json', 'w')
+    F = open('pp_dev_pred.json', 'w')
     for d in tqdm(iter(dev_data)):
         R = set([json.dumps(item) for item in extract_items(model, d['text'])])
         T = set([json.dumps(item) for item in d['spo_list']])
@@ -144,3 +144,4 @@ if __name__ == "__main__":
             kg_model.eval()
             result = evaluate(kg_model)
             print(result)
+            fluid.save_dygraph(kg_model, "./models/model_{}".format(epoch))
