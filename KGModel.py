@@ -27,9 +27,7 @@ def get_k_inter(seq, k):
 
 
 def position_id(x, r=0):
-    start = layers.fill_constant(shape=[1], value=0, dtype="int32")
-    end = layers.shape(x)[1]
-    pid = layers.arange(start, end, dtype="int32")
+    pid = fluid.dygraph.to_variable(np.arange(0, layers.shape(x)[1], dtype="int32"))
     pid = layers.unsqueeze(pid, 0)
     r = layers.cast(layers.ones_like(x), dtype="int32") * r
     return layers.cast(layers.abs(layers.elementwise_sub(pid, r)), dtype='int64')

@@ -56,14 +56,22 @@ def load_word_vec(wordVecPath="./word2vec_baike/sgns.baidubaike.bigram-char", pa
     return word2id, word_vec
 
 
-def load_data(mode=0):
-    # 数据加载
-    total_data = json.load(open('datasets/train_data_me.json', encoding='utf-8'))
+def load_char():
+    id2char, char2id = json.load(open('datasets/all_chars_me.json', encoding='utf-8'))
+    char_num = len(char2id) + 2  # padding and mask
+    return id2char, char2id, char_num
+
+
+def load_predicate():
     id2predicate, predicate2id = json.load(open('datasets/all_schemas_me.json', encoding='utf-8'))
     id2predicate = {int(i): j for i, j in id2predicate.items()}
-    id2char, char2id = json.load(open('datasets/all_chars_me.json', encoding='utf-8'))
     num_classes = len(id2predicate)
-    char_num = len(char2id) + 2  # padding and mask
+    return id2predicate, predicate2id, num_classes
+
+
+def load_data(n=8, mode=0):
+    # 数据加载
+    total_data = json.load(open('datasets/train_data_me.json', encoding='utf-8'))
 
     # 打乱后的训练数据id
     if not os.path.exists('random_order_vote.json'):
@@ -78,8 +86,8 @@ def load_data(mode=0):
         random_order = json.load(open('random_order_vote.json', encoding='utf-8'))
 
     # 数据分割
-    train_data = [total_data[j] for i, j in enumerate(random_order) if i % 8 != mode]
-    dev_data = [total_data[j] for i, j in enumerate(random_order) if i % 8 == mode]
+    train_data = [total_data[j] for i, j in enumerate(random_order) if i % n != mode]
+    dev_data = [total_data[j] for i, j in enumerate(random_order) if i % n == mode]
 
     predicates = {}  # 格式：{predicate: [(subject, predicate, object)]}
 
@@ -90,7 +98,7 @@ def load_data(mode=0):
                 predicates[sp[1]] = []
             predicates[sp[1]].append(sp)
 
-    return train_data, dev_data, char_num, num_classes, predicates, id2char, char2id, id2predicate, predicate2id
+    return train_data, dev_data, predicates
 
 
 def random_generate(d, predicates):
