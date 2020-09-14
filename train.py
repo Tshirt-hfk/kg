@@ -335,7 +335,10 @@ if __name__ == "__main__":
     with fluid.dygraph.guard(place):
         kg_model = KGModel(embedding_dim, word_dim, maxlen, char_num, num_classes, padding_idx)
 
-        adam = fluid.optimizer.AdamOptimizer(learning_rate=1e-3,
+        adam = fluid.optimizer.AdamOptimizer(learning_rate=layers.linear_lr_warmup(learning_rate=1e-3,
+                                                                                   warmup_steps=90,
+                                                                                   start_lr=1e-6,
+                                                                                   end_lr=1e-3),
                                              parameter_list=kg_model.parameters())
 
         # global_steps = layers.learning_rate_scheduler._decay_step_counter()
