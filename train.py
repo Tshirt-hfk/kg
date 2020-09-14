@@ -144,4 +144,4 @@ if __name__ == "__main__":
             kg_model.eval()
             result = evaluate(kg_model)
             print(result)
-            fluid.save_dygraph(kg_model, "./models/model_{}".format(epoch))
+            fluid.save_dygraph(kg_model.state_dict(), "./models/model_{}".format(epoch))
