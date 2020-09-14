@@ -38,7 +38,7 @@ def extract_items(model, text_in):
             j = j[0]
             _subject = text_in[i: j + 1]
             k = np.zeros(len(text_in))
-            for x in range(i, j):
+            for x in range(i, j+1):
                 k[j] = x
             _subjects.append((_subject, k))
     if _subjects:
@@ -107,6 +107,8 @@ def evaluate(model):
     F.close()
     return 2 * A / (B + C), A / B, A / C
 
+
+training = False
 
 if __name__ == "__main__":
     EPOCH_NUM = 120
