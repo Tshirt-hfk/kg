@@ -39,7 +39,7 @@ def extract_items(model, text_in):
             _subject = text_in[i: j + 1]
             k = np.zeros(len(text_in))
             for x in range(i, j+1):
-                k[j] = 1
+                k[x] = 1
             _subjects.append((_subject, k))
     if _subjects:
         _k = np.array([_s[1] for _s in _subjects])
