@@ -124,6 +124,7 @@ if __name__ == "__main__":
 
         for epoch in range(EPOCH_NUM):
             kg_model.train()
+            loss_v = 0
             for step, data in enumerate(data_generator(train_data, char2id, word2id, predicate2id,
                                                        num_classes, predicates, maxlen=maxlen)):
                 t1, t2, s1, s2, k, o1, o2 = data
@@ -140,7 +141,8 @@ if __name__ == "__main__":
 
                 kg_model.clear_gradients()
 
-                print("epoch {} step {}: ".format(epoch, step), loss.numpy()[0])
+                loss_v += loss.numpy()[0]
+            print("epoch {} step {}: ".format(epoch, step), loss_v/(step+1))
             kg_model.eval()
             result = evaluate(kg_model)
             print(result)
