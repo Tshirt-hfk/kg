@@ -95,7 +95,7 @@ def predict(texts):
     all_spo_list = []
     with fluid.dygraph.guard(place):
         for idx, text in enumerate(texts):
-            r = extract_items(kg_model, re.sub(r'[^\w\s]', '', text))
+            r = extract_items(kg_model, re.sub(r'[^\w\s]', '', text.strip('\n').strip()))
             all_spo_list.append(r)
     return all_spo_list
 
