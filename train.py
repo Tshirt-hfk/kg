@@ -141,4 +141,4 @@ if __name__ == "__main__":
             print("f1: {} acc: {} recall: {}: ".format(f1, acc, rec))
             if best_f1 < f1:
                 best_f1 = f1
-                fluid.save_dygraph(kg_model.state_dict(), "./models/model".format(epoch))
+                fluid.save_dygraph(kg_model.state_dict(), "./models/model_{}".format(epoch))
