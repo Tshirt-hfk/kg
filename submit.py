@@ -29,7 +29,7 @@ def extract_items(model, text_in):
     t2 = to_variable(_t2.astype("int64"))
     mask = get_mask(t1)
     t = model.embedding(t1, t2)
-    t, pn1, pn2, ps1, ps2 = model.er_model(t, mask=mask)
+    t, pn1, pn2, ps1, ps2 = model.er_model(t, mask=mask, training=False)
     _ps1, _ps2 = ps1.numpy(), ps2.numpy()
 
     _k1, _k2 = _ps1[0, :, 0], _ps2[0, :, 0]
@@ -49,7 +49,7 @@ def extract_items(model, text_in):
 
         k = to_variable(_k.astype("float32"))
         t = layers.expand(t, [len(_subjects), 1, 1])
-        o1, o2 = model.re_model(t, k, pn1, pn2, mask=mask)
+        o1, o2 = model.re_model(t, k, pn1, pn2, mask=mask, training=False)
         _o1, _o2 = o1.numpy(), o2.numpy()
 
         for i, _subject in enumerate(_subjects):

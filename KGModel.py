@@ -11,7 +11,7 @@ def seq_gather(seq, idxs):
     最终输出[None, s_size]的向量。
     """
     idxs = layers.cast(idxs, dtype="int32")
-    batch_idxs = layers.arange(0, seq.shape[0], dtype="int32")
+    batch_idxs = fluid.dygraph.to_variable(np.arange(0, seq.shape[0], dtype="int32"))
     batch_idxs = layers.unsqueeze(batch_idxs, 1)
     idxs = layers.concat([batch_idxs, idxs], 1)
     return layers.gather_nd(seq, idxs)
@@ -27,7 +27,7 @@ def get_k_inter(seq, k):
 
 
 def position_id(x, r=0):
-    pid = layers.arange(0, x.shape[1], dtype="int32")
+    pid = fluid.dygraph.to_variable(np.arange(0, x.shape[1], dtype="int32"))
     pid = layers.unsqueeze(pid, 0)
     r = layers.cast(layers.ones_like(x), dtype="int32") * r
     return layers.cast(layers.abs(layers.elementwise_sub(pid, r)), dtype='int64')
@@ -63,12 +63,12 @@ class DilatedGatedConv1d(fluid.dygraph.Layer):
         self.dropout_rate = dropout_rate
         self.conv1d = Conv1d(num_channels, num_filters * 2, filter_size, stride, padding, dilation)
 
-    def forward(self, seq, mask=None):
+    def forward(self, seq, mask=None, training=True):
         h = self.conv1d(seq)
         g, h = h[:, :, :self.num_filters], h[:, :, self.num_filters:]
         if self.dropout_rate:
             g = layers.dropout(g, dropout_prob=self.dropout_rate, dropout_implementation="upscale_in_train",
-                               is_test=not self.training)
+                               is_test=not training)
         g = layers.sigmoid(g)
         seq = g * seq + (1 - g) * h
         if mask is not None:
@@ -88,7 +88,7 @@ class MultiHeadAttention(fluid.dygraph.Layer):
         self.k_proj = nn.Linear(input_dim, self.d_key * self.n_head)
         self.v_proj = nn.Linear(input_dim, self.d_value * self.n_head)
 
-    def forward(self, queries, keys=None, values=None, mask=None):
+    def forward(self, queries, keys=None, values=None, mask=None, training=True):
         keys = queries if keys is None else keys
         values = keys if values is None else values
         q = self.q_proj(queries)
@@ -107,7 +107,7 @@ class MultiHeadAttention(fluid.dygraph.Layer):
                 weights,
                 dropout_prob=self.dropout_rate,
                 dropout_implementation="upscale_in_train",
-                is_test=not self.training)
+                is_test=not training)
         out = layers.matmul(weights, v)
         out = layers.reshape(layers.transpose(out, [0, 2, 1, 3]), [0, 0, self.d_value * self.n_head])
 
@@ -143,7 +143,7 @@ class ERModel(fluid.dygraph.Layer):
         self.ps1_fc = nn.Linear(t_dim, 1)
         self.ps2_fc = nn.Linear(t_dim, 1)
 
-    def forward(self, t, mask=None):
+    def forward(self, t, mask=None, training=True):
         for dilated_gated_conv1d in self.dilated_gated_conv1d_list:
             t = dilated_gated_conv1d(t)
 
@@ -153,7 +153,7 @@ class ERModel(fluid.dygraph.Layer):
         pn2 = layers.relu(self.pn2_fc1(t))
         pn2 = layers.sigmoid(self.pn2_fc2(pn2))
 
-        h = self.multi_head_attn(t, mask=mask)
+        h = self.multi_head_attn(t, mask=mask, training=training)
 
         h = layers.concat([t, h], axis=-1)
 
@@ -183,13 +183,13 @@ class REModel(fluid.dygraph.Layer):
         self.po1_fc = nn.Linear(t_dim, num_class)
         self.po2_fc = nn.Linear(t_dim, num_class)
 
-    def forward(self, t, k, pn1, pn2, mask=None):
+    def forward(self, t, k, pn1, pn2, mask=None, training=True):
         pc = self._compute_pc(t, mask)
 
         k = get_k_inter(t, k)
         k = layers.expand(k, [1, t.shape[1], 1])
 
-        h = self.multi_head_attn(t, mask=mask)
+        h = self.multi_head_attn(t, mask=mask, training=training)
         h = layers.concat([t, h, k], axis=-1)
         h = self.conv1d(h)
 
@@ -240,7 +240,7 @@ class KGModel(fluid.dygraph.Layer):
 
         self.dropout_rate = dropout_rate
 
-    def embedding(self, t1, t2, mask=None):
+    def embedding(self, t1, t2, mask=None, training=True):
         pv = self.pe(position_id(t1))
         t1 = self.ce(t1)
         t2 = self.we(self.we_p(t2))
@@ -250,19 +250,19 @@ class KGModel(fluid.dygraph.Layer):
                 t,
                 dropout_prob=self.dropout_rate,
                 dropout_implementation="upscale_in_train",
-                is_test=not self.training)
+                is_test=not training)
         if mask is not None:
             t = t * mask
         return t
 
-    def forward(self, t1, t2, k):
+    def forward(self, t1, t2, k, training=True):
         mask = get_mask(t1, padding_idx=self.padding_idx)
 
-        t = self.embedding(t1, t2)
+        t = self.embedding(t1, t2, training)
 
-        t, pn1, pn2, ps1, ps2 = self.er_model(t, mask=mask)
+        t, pn1, pn2, ps1, ps2 = self.er_model(t, mask=mask, training=training)
 
-        po1, po2 = self.re_model(t, k, pn1, pn2, mask=mask)
+        po1, po2 = self.re_model(t, k, pn1, pn2, mask=mask, training=training)
 
         return ps1, ps2, po1, po2, mask
 
