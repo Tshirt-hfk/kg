@@ -17,7 +17,7 @@ padding_idx = 0
 
 
 def extract_items(model, text_in):
-    text_words = tokenize(text_in.lower())
+    text_words = tokenize(text_in)
     text_in = ''.join(text_words)
     R = []
     _t1 = [char2id.get(c, 1) for c in text_in]
@@ -118,7 +118,7 @@ if __name__ == "__main__":
             kg_model.train()
             loss_v = 0
             for step, data in enumerate(data_generator(train_data, char2id, word2id, predicate2id,
-                                                       num_classes, predicates, maxlen=maxlen, batch_size=128)):
+                                                       num_classes, predicates, maxlen=maxlen, batch_size=64)):
                 t1, t2, s1, s2, k, o1, o2 = data
                 t1, t2 = to_variable(t1), to_variable(t2)
                 s1, s2 = to_variable(s1), to_variable(s2)
@@ -141,4 +141,4 @@ if __name__ == "__main__":
             print("f1: {} acc: {} recall: {}: ".format(f1, acc, rec))
             if best_f1 < f1:
                 best_f1 = f1
-                fluid.save_dygraph(kg_model.state_dict(), "./models/model_{}".format(epoch))
+                fluid.save_dygraph(kg_model.state_dict(), "./models/model")
